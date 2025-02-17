@@ -1,9 +1,13 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import random
+from os import getenv
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
-CORS(app, origins=["http://localhost:3000", "http://127.0.0.1:5000"])
+CORS(app, origins=getenv("ORIGINS", "http://localhost:3000").split(","))
 # Enhanced Q&A database with multiple choice answers
 qa_database = [
     {
@@ -13,10 +17,10 @@ qa_database = [
             {"id": "a", "text": "London", "correct": False},
             {"id": "b", "text": "Paris", "correct": True},
             {"id": "c", "text": "Berlin", "correct": False},
-            {"id": "d", "text": "Madrid", "correct": False}
+            {"id": "d", "text": "Madrid", "correct": False},
         ],
         "category": "geography",
-        "difficulty": "easy"
+        "difficulty": "easy",
     },
     {
         "id": 2,
@@ -25,10 +29,10 @@ qa_database = [
             {"id": "a", "text": "Charles Dickens", "correct": False},
             {"id": "b", "text": "Jane Austen", "correct": False},
             {"id": "c", "text": "William Shakespeare", "correct": True},
-            {"id": "d", "text": "Mark Twain", "correct": False}
+            {"id": "d", "text": "Mark Twain", "correct": False},
         ],
         "category": "literature",
-        "difficulty": "easy"
+        "difficulty": "easy",
     },
     {
         "id": 3,
@@ -37,10 +41,10 @@ qa_database = [
             {"id": "a", "text": "Ag", "correct": False},
             {"id": "b", "text": "Fe", "correct": False},
             {"id": "c", "text": "Ge", "correct": False},
-            {"id": "d", "text": "Au", "correct": True}
+            {"id": "d", "text": "Au", "correct": True},
         ],
         "category": "science",
-        "difficulty": "medium"
+        "difficulty": "medium",
     },
     {
         "id": 4,
@@ -49,10 +53,10 @@ qa_database = [
             {"id": "a", "text": "Jupiter", "correct": True},
             {"id": "b", "text": "Saturn", "correct": False},
             {"id": "c", "text": "Neptune", "correct": False},
-            {"id": "d", "text": "Mars", "correct": False}
+            {"id": "d", "text": "Mars", "correct": False},
         ],
         "category": "science",
-        "difficulty": "easy"
+        "difficulty": "easy",
     },
     {
         "id": 5,
@@ -61,55 +65,66 @@ qa_database = [
             {"id": "a", "text": "14", "correct": False},
             {"id": "b", "text": "12", "correct": True},
             {"id": "c", "text": "10", "correct": False},
-            {"id": "d", "text": "16", "correct": False}
+            {"id": "d", "text": "16", "correct": False},
         ],
         "category": "mathematics",
-        "difficulty": "medium"
-    }
+        "difficulty": "medium",
+    },
 ]
 
-@app.route('/api/questions', methods=['GET'])
+
+@app.route("/api/questions", methods=["GET"])
 def get_questions():
-    category = request.args.get('category')
-    difficulty = request.args.get('difficulty')
-    hide_correct = request.args.get('hide_correct', 'false').lower() == 'true'
-    
+    category = request.args.get("category")
+    difficulty = request.args.get("difficulty")
+    hide_correct = request.args.get("hide_correct", "false").lower() == "true"
+
     filtered_questions = qa_database
-    
+
     if category:
-        filtered_questions = [q for q in filtered_questions if q['category'] == category]
+        filtered_questions = [
+            q for q in filtered_questions if q["category"] == category
+        ]
     if difficulty:
-        filtered_questions = [q for q in filtered_questions if q['difficulty'] == difficulty]
-    
+        filtered_questions = [
+            q for q in filtered_questions if q["difficulty"] == difficulty
+        ]
+
     if hide_correct:
         filtered_questions = remove_correct_answers(filtered_questions)
-    
+
     return jsonify(filtered_questions)
 
-@app.route('/api/questions/<int:question_id>', methods=['GET'])
+
+@app.route("/api/questions/<int:question_id>", methods=["GET"])
 def get_question(question_id):
-    hide_correct = request.args.get('hide_correct', 'false').lower() == 'true'
-    question = next((q for q in qa_database if q['id'] == question_id), None)
-    
+    hide_correct = request.args.get("hide_correct", "false").lower() == "true"
+    question = next((q for q in qa_database if q["id"] == question_id), None)
+
     if question:
         if hide_correct:
             question = remove_correct_answers([question])[0]
         return jsonify(question)
     return jsonify({"error": "Question not found"}), 404
 
-@app.route('/api/random', methods=['GET'])
+
+@app.route("/api/random", methods=["GET"])
 def get_random_question():
-    category = request.args.get('category')
-    difficulty = request.args.get('difficulty')
-    hide_correct = request.args.get('hide_correct', 'false').lower() == 'true'
-    
+    category = request.args.get("category")
+    difficulty = request.args.get("difficulty")
+    hide_correct = request.args.get("hide_correct", "false").lower() == "true"
+
     filtered_questions = qa_database
-    
+
     if category:
-        filtered_questions = [q for q in filtered_questions if q['category'] == category]
+        filtered_questions = [
+            q for q in filtered_questions if q["category"] == category
+        ]
     if difficulty:
-        filtered_questions = [q for q in filtered_questions if q['difficulty'] == difficulty]
-    
+        filtered_questions = [
+            q for q in filtered_questions if q["difficulty"] == difficulty
+        ]
+
     if filtered_questions:
         question = random.choice(filtered_questions)
         if hide_correct:
@@ -117,38 +132,42 @@ def get_random_question():
         return jsonify(question)
     return jsonify({"error": "No questions found matching criteria"}), 404
 
-@app.route('/api/categories', methods=['GET'])
+
+@app.route("/api/categories", methods=["GET"])
 def get_categories():
-    categories = list(set(q['category'] for q in qa_database))
+    categories = list(set(q["category"] for q in qa_database))
     return jsonify(categories)
 
-@app.route('/api/check/<int:question_id>', methods=['POST'])
+
+@app.route("/api/check/<int:question_id>", methods=["POST"])
 def check_answer(question_id):
-    question = next((q for q in qa_database if q['id'] == question_id), None)
+    question = next((q for q in qa_database if q["id"] == question_id), None)
     if not question:
         return jsonify({"error": "Question not found"}), 404
-    
+
     data = request.get_json()
-    if not data or 'answer' not in data:
+    if not data or "answer" not in data:
         return jsonify({"error": "Answer not provided"}), 400
-    
-    selected_answer = data['answer']
-    correct_answer = next(opt['id'] for opt in question['options'] if opt['correct'])
-    
-    return jsonify({
-        "correct": selected_answer == correct_answer,
-        "correct_answer": correct_answer
-    })
+
+    selected_answer = data["answer"]
+    correct_answer = next(opt["id"] for opt in question["options"] if opt["correct"])
+
+    return jsonify(
+        {"correct": selected_answer == correct_answer, "correct_answer": correct_answer}
+    )
+
 
 def remove_correct_answers(questions):
     """Remove 'correct' field from options to hide answers"""
     questions_copy = []
     for q in questions:
         q_copy = q.copy()
-        q_copy['options'] = [{k: v for k, v in opt.items() if k != 'correct'} 
-                           for opt in q['options']]
+        q_copy["options"] = [
+            {k: v for k, v in opt.items() if k != "correct"} for opt in q["options"]
+        ]
         questions_copy.append(q_copy)
     return questions_copy
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     app.run(debug=True)
