@@ -3,8 +3,7 @@ from flask_cors import CORS
 import random
 
 app = Flask(__name__)
-CORS(app)
-
+CORS(app, origins=["http://localhost:3000", "http://127.0.0.1:5000"])
 # Enhanced Q&A database with multiple choice answers
 qa_database = [
     {
