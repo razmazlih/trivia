@@ -124,7 +124,7 @@ def filter_questions(
 
 @app.route("/api/questions", methods=["GET"])
 def get_questions():
-    """Get all questions with optional filtering."""
+    """Get up to 5 random questions with optional filtering."""
     category = request.args.get("category")
     difficulty = request.args.get("difficulty")
     hide_correct = request.args.get("hide_correct", "false").lower() == "true"
@@ -137,7 +137,11 @@ def get_questions():
             HTTPStatus.NOT_FOUND,
         )
 
-    return jsonify([q.to_dict(hide_correct) for q in filtered_questions])
+    selected_questions = random.sample(
+        filtered_questions, min(5, len(filtered_questions))
+    )
+
+    return jsonify([q.to_dict(hide_correct) for q in selected_questions])
 
 
 # @app.route("/api/random", methods=["GET"])
