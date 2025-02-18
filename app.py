@@ -125,23 +125,18 @@ def filter_questions(
 @app.route("/api/questions", methods=["GET"])
 def get_questions():
     """Get up to 5 random questions with optional filtering."""
-    category = request.args.get("category")
-    difficulty = request.args.get("difficulty")
-    hide_correct = request.args.get("hide_correct", "false").lower() == "true"
 
-    filtered_questions = filter_questions(qa_database, category, difficulty)
-
-    if not filtered_questions:
+    if not qa_database:
         return (
             jsonify({"error": "No questions found matching criteria"}),
             HTTPStatus.NOT_FOUND,
         )
 
     selected_questions = random.sample(
-        filtered_questions, min(5, len(filtered_questions))
+        qa_database, min(5, len(qa_database))
     )
 
-    return jsonify([q.to_dict(hide_correct) for q in selected_questions])
+    return jsonify([q.to_dict(False) for q in selected_questions])
 
 
 # @app.route("/api/random", methods=["GET"])
@@ -205,4 +200,4 @@ def check_answer(question_id: int):
 
 
 if __name__ == "__main__":
-    app.run(debug=getenv("FLASK_DEBUG", "true").lower() == "true")
+    app.run(debug=getenv("FLASK_DEBUG", "true").lower() == "true", port=getenv("FLASK_PORT", "5000"))
